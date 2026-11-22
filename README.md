@@ -58,6 +58,8 @@ The chat input shows a **Main** chip and a **Subagent** chip, each naming its cu
 2. The menu stays open, so you can adjust the reasoning effort at the bottom.
 3. Click **Apply** to save. Cancel, Escape, or a click outside the menu saves nothing.
 
+The **Main** menu preserves DSH's native **Agent teamwork** switch between the model list and the **Cancel / Apply** editor. Click the ⓘ next to it for help. Teamwork is a separate session setting. Click **Apply** to save model changes.
+
 What each chip affects:
 
 - The **Main** chip changes the current session only.
@@ -124,6 +126,7 @@ It installs on any version; which functions run depends on the interfaces that D
 
 | Version | Main changes |
 |---|---|
+| 1.3.2 | Restores DSH's native Agent teamwork switch inside the plugin's model menu. [Notes](docs/releases/1.3.2-native-model-options.md) |
 | 1.3.1 | Fixes subagents failing to start on DSH 0.2.2-rc.3, and the session-header subagent catalog opening invisibly on DSH 0.2.2. [Notes](docs/releases/1.3.1-dsh-0.2.2-fixes.md) |
 | 1.3.0 | No DSH version gate; when DSH lacks an interface, only the affected function is switched off, with the reason shown; adapts to DSH 0.2.2; favorites keep the reasoning effort. [Notes](docs/releases/1.3.0-host-seams.md) |
 | 1.2.3 | Aligned with DSH Desktop 0.2.1-rc.5. [Notes](docs/releases/1.2.3-compatibility.md) |

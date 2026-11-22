@@ -7,6 +7,9 @@ VERIFICATION-BRIEF.md
 opencode-go-probe-brief.md
 *.log
 
+# Local screenshots and throwaway verification artifacts
+.artifacts/
+
 # Isolated CI host runtime and its private verification report
 .native-host/
 native-host-report.json

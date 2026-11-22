@@ -1,3 +1,5 @@
+/** One searchable, keyboard-accessible model menu shared by every surface. */
+import { type ReactNode } from 'react';
 import type { ModelCatalog, ModelSelection, SessionId } from '@deepseek-ai/dsh-api-remotes/client';
 import { type ModelSelectionConfig } from '../shared.ts';
 import type { LocaleKey } from './locales.ts';
@@ -28,5 +30,7 @@ export interface ModelPickerProps {
     sourceLabel?: string;
     onClear?: () => void | Promise<void>;
     clearLabel?: string;
+    /** Main-chat native options. They are not model choices and do not alter the draft. */
+    renderOptions?: (locked: boolean, dismiss: () => void, reportFailure: (message: string) => void, reportPresence: (present: boolean) => void) => ReactNode;
 }
-export declare function ModelPicker({ sessionId, access, value, onChange, t, disabled, className, placement, fallbackLabel, requireSession, roleLabel, controlLabel, stretch, scopeHint, sourceLabel, onClear, clearLabel, compact }: ModelPickerProps): import("react").JSX.Element;
+export declare function ModelPicker({ sessionId, access, value, onChange, t, disabled, className, placement, fallbackLabel, requireSession, roleLabel, controlLabel, stretch, scopeHint, sourceLabel, onClear, clearLabel, compact, renderOptions }: ModelPickerProps): import("react").JSX.Element;

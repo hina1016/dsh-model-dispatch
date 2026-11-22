@@ -33,6 +33,7 @@ import {
 } from './SubagentCatalogAction.tsx'
 import { SessionLabelStore } from './session-label-store.ts'
 import type { ModelCatalogAccess } from './ModelPicker.tsx'
+import { NativeModelOptions, nativeModelOptionsHost, type NativeModelOptionsOwner } from './NativeModelOptions.tsx'
 import type { UiCapability, UiCapabilityReport } from './SeamNotice.tsx'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -135,10 +136,18 @@ export function apply(ctx: Context): void {
         name: 'conversation.input.model',
         priority: -1,
         locale: NS,
-        inject: (sessionId) => ({
-          access, remote, mainStore, t, overrides, store, routes,
-          available: sessions.subagentAddress(sessionId) === undefined,
-        }),
+        inject: (sessionId) => {
+          const nativeOptions = nativeModelOptionsHost(
+            () => seat.slots.entries?.('conversation.input.model.options'),
+            typeof seat.slots.subscribe === 'function' ? seat.slots.subscribe.bind(seat.slots) : undefined,
+            namespace => seat.locale.bind(namespace),
+          )
+          return {
+            access, remote, mainStore, t, overrides, store, routes,
+            available: sessions.subagentAddress(sessionId) === undefined,
+            renderNativeOptions: nativeOptions === undefined ? undefined : (standard: Record<string, unknown>, owner: NativeModelOptionsOwner) => <NativeModelOptions host={nativeOptions} sessionId={sessionId} standard={standard} {...owner} />,
+          }
+        },
       }, SessionModelControls))
     })
   })

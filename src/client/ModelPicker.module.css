@@ -11,6 +11,8 @@
 .chevron { flex: none; width: 12px; height: 12px; color: var(--dsw-alias-label-tertiary, #777784); transition: transform 120ms ease-out; }
 .trigger[aria-expanded="true"] .chevron { transform: rotate(180deg); }
 .menu { position: fixed; z-index: 10000; width: min(360px, calc(100vw - 24px)); display: flex; flex-direction: column; overflow: hidden; padding: 8px; border: 1px solid var(--dsw-alias-border-l2, #dedee3); border-radius: 14px; background: var(--dsw-alias-bg-layer-1, #fff); box-shadow: 0 12px 40px #0002, 0 2px 8px #0001; color: var(--dsw-alias-label-primary, #27272f); box-sizing: border-box; }
+/* Native help portals sit at 1100. Use a lower layer only for pickers that host native options. */
+.menuWithNativeOptions { z-index: 1099; }
 .menu[data-upwards="true"] { transform: translateY(-100%); }
 .menuHeader { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 3px 4px 9px; font-size: 13px; font-weight: 600; }
 .source { font-size: 10px; font-weight: 500; color: var(--dsw-alias-state-business-primary, #5269dc); background: color-mix(in srgb, var(--dsw-alias-state-business-primary, #5269dc) 9%, transparent); border-radius: 4px; padding: 2px 6px; }
@@ -64,6 +66,10 @@
 .retry { flex: none; border: 0; padding: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 .warning { padding: 6px 4px; font-size: 10px; color: var(--dsw-alias-label-tertiary, #777784); }
 @media (max-width: 640px) { .trigger { max-width: 190px; } .triggerEffort { display: none; } }
+
+/* Native collaboration controls are an action group, not part of the model draft. */
+.nativeOptions { flex: none; min-height: 44px; box-sizing: border-box; padding: 6px 0; border-top: 1px solid var(--dsw-alias-border-l2, #dedee3); }
+.optionError { margin: 0; padding: 6px 8px; overflow-wrap: anywhere; color: var(--dsw-alias-state-error-primary, #c0392b); font-size: 12px; line-height: 18px; }
 
 /* Composer chips join the host's borderless composer controls: same height, type, and hover surface. */
 .compact .trigger { max-width: 260px; height: 28px; gap: 5px; padding: 0 6px 0 8px; border-color: transparent; border-radius: var(--dsw-radius-sm, 6px); background: transparent; }

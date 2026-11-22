@@ -15,6 +15,7 @@ export declare const zh: {
     triggerFallback: string;
     triggerSelectAria: string;
     menuAria: string;
+    modelOptionsLabel: string;
     statusLoading: string;
     emptyModels: string;
     emptyEfforts: string;
@@ -105,6 +106,7 @@ export declare const en: {
     triggerFallback: string;
     triggerSelectAria: string;
     menuAria: string;
+    modelOptionsLabel: string;
     statusLoading: string;
     emptyModels: string;
     emptyEfforts: string;

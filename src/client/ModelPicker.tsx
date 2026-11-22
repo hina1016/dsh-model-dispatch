@@ -1,7 +1,8 @@
 /** One searchable, keyboard-accessible model menu shared by every surface. */
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { ModelCatalog, ModelSelection, SessionId } from '@deepseek-ai/dsh-api-remotes/client'
+import type {} from './native-model-options.ts'
 import { IconCheckOutlineMedium, IconChevronDownOutlineMedium } from '@deepseek-ai/dsh-client-ui-primitives'
 import { sameSelection, type ModelSelectionConfig } from '../shared.ts'
 import { effortOf, favoriteRows, hasFavorite, isFavorite, MAX_FAVORITES, modelKey, modelPreferences, recentRows, startingEffort, type Effort, type FavoriteChoice, type ModelPreferences, type ShortcutChip, type ShortcutRow } from './model-preferences.ts'
@@ -35,6 +36,8 @@ export interface ModelPickerProps {
   sourceLabel?: string
   onClear?: () => void | Promise<void>
   clearLabel?: string
+  /** Main-chat native options. They are not model choices and do not alter the draft. */
+  renderOptions?: (locked: boolean, dismiss: () => void, reportFailure: (message: string) => void, reportPresence: (present: boolean) => void) => ReactNode
 }
 const withEffort = (provider: string, model: string, effort: string | undefined): ModelSelectionConfig => ({ provider, model, ...effort === undefined ? {} : { reasoningEffort: effort } })
 /** Star lighting: a short critically damped settle, skipped under reduced motion. */
@@ -43,7 +46,7 @@ function settle(element: HTMLElement | null): void {
   if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
   element.animate([{ transform: 'scale(0.85)' }, { transform: 'scale(1)' }], { duration: 250, easing: 'cubic-bezier(0.2, 0, 0, 1)' })
 }
-export function ModelPicker({ sessionId, access, value, onChange, t, disabled, className, placement = 'bottom', fallbackLabel, requireSession = false, roleLabel, controlLabel, stretch = false, scopeHint, sourceLabel, onClear, clearLabel, compact = false }: ModelPickerProps) {
+export function ModelPicker({ sessionId, access, value, onChange, t, disabled, className, placement = 'bottom', fallbackLabel, requireSession = false, roleLabel, controlLabel, stretch = false, scopeHint, sourceLabel, onClear, clearLabel, compact = false, renderOptions }: ModelPickerProps) {
   const [catalog, setCatalog] = useState<ModelCatalog | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -53,6 +56,8 @@ export function ModelPicker({ sessionId, access, value, onChange, t, disabled, c
   const [draft, setDraft] = useState<ModelSelectionConfig | undefined>()
   const [inherit, setInherit] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [optionError, setOptionError] = useState<string | null>(null)
+  const [hasOptions, setHasOptions] = useState(false)
   const [announcement, setAnnouncement] = useState('')
   // Favorites removed while this menu is open keep their place as hollow chips: one tap restores them.
   const [ghosts, setGhosts] = useState<readonly FavoriteChoice[]>([])
@@ -184,7 +189,7 @@ export function ModelPicker({ sessionId, access, value, onChange, t, disabled, c
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
     if (event.key === 'Escape') { event.preventDefault(); close(true); return }
     if (event.key === 'Tab') {
-      const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('input, button:not(:disabled)') ?? [])
+      const items = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('input, button:not(:disabled), [role="switch"][tabindex="0"]') ?? [])
       const at = items.indexOf(document.activeElement as HTMLElement)
       if ((!event.shiftKey && at === items.length - 1) || (event.shiftKey && at === 0)) {
         event.preventDefault(); items[event.shiftKey ? items.length - 1 : 0]?.focus()
@@ -203,6 +208,7 @@ export function ModelPicker({ sessionId, access, value, onChange, t, disabled, c
       items[event.key === 'ArrowRight' ? Math.min(at + 1, items.length - 1) : Math.max(at - 1, 0)]?.focus()
       return
     }
+    if (active?.closest('[role="switch"]')) return
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
     if (event.target === searchRef.current && ['Home', 'End'].includes(event.key)) return
     event.preventDefault()
@@ -224,7 +230,7 @@ export function ModelPicker({ sessionId, access, value, onChange, t, disabled, c
   return (
     <div className={[css.root, compact ? css.compact : undefined, stretch ? css.stretch : undefined, className].filter(Boolean).join(' ')}>
       <button ref={triggerRef} type="button" className={css.trigger} aria-label={fullLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} title={fullLabel} disabled={blocked} onClick={() => {
-        if (open) close(); else { setQuery(''); setDraft(value === undefined ? undefined : { ...value }); setInherit(false); setError(null); setNotice(null); setAnnouncement(''); setGhosts([]); setOpen(true); load() }
+        if (open) close(); else { setQuery(''); setDraft(value === undefined ? undefined : { ...value }); setInherit(false); setError(null); setNotice(null); setOptionError(null); setAnnouncement(''); setGhosts([]); setOpen(true); load() }
       }}>
         {roleLabel && <span className={css.role}>{roleLabel}</span>}
         <span className={css.triggerLabel}>{modelLabel}</span>
@@ -232,7 +238,7 @@ export function ModelPicker({ sessionId, access, value, onChange, t, disabled, c
         <IconChevronDownOutlineMedium className={css.chevron} />
       </button>
       {open && createPortal(
-        <div ref={menuRef} id={id} role="dialog" aria-modal="true" aria-label={controlLabel ?? roleLabel ?? t('menuAria')} className={css.menu} style={{ left: position.left, top: position.top, maxHeight: position.height }} onKeyDown={onKeyDown}>
+        <div ref={menuRef} id={id} role="dialog" aria-modal="true" aria-label={controlLabel ?? roleLabel ?? t('menuAria')} className={hasOptions ? `${css.menu} ${css.menuWithNativeOptions}` : css.menu} style={{ left: position.left, top: position.top, maxHeight: position.height }} onKeyDown={onKeyDown}>
           <header className={css.menuHeader}>
             <span>{controlLabel ?? roleLabel ?? t('menuAria')}</span>
             {sourceLabel && <span className={css.source}>{sourceLabel}</span>}
@@ -285,6 +291,10 @@ export function ModelPicker({ sessionId, access, value, onChange, t, disabled, c
             </section>)}
             {!loading && visible.length === 0 && <div className={css.empty}>{t(normalized ? 'noResults' : 'emptyModels')}</div>}
           </div>
+          {renderOptions && <div className={hasOptions ? css.nativeOptions : undefined} role={hasOptions ? 'group' : undefined} aria-label={hasOptions ? t('modelOptionsLabel') : undefined}>
+            {renderOptions(blocked, () => { close(true) }, setOptionError, setHasOptions)}
+            {hasOptions && optionError && <p className={css.optionError} role="alert">{optionError}</p>}
+          </div>}
           {onClear && <button className={css.clear} type="button" aria-pressed={inherit} disabled={blocked} onClick={() => { setInherit(true); setNotice(null) }}>{clearLabel ?? t('modeFollow')}{inherit && <IconCheckOutlineMedium className={css.check} />}</button>}
           <div className={css.selectionEditor}>
             <div className={css.draftSummary}>

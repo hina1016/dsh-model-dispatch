@@ -3,7 +3,7 @@
  * so favorites, recents, effort chips, and migration can be exercised without DSH.
  * Storage belongs to this origin, so it never touches the real GUI's shortcuts.
  */
-import { useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { createRoot } from 'react-dom/client'
 import type { ModelCatalog } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ModelSelectionConfig } from '../src/shared.ts'
@@ -64,6 +64,17 @@ function runScenario(apply: () => void): void { apply(); location.reload() }
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const describe = (value: ModelSelectionConfig | undefined): string => value === undefined ? '未设置' : `${value.provider} / ${value.model}${value.reasoningEffort ? ` · ${value.reasoningEffort}` : ' · 提供方默认'}`
 
+function NativeOptionsPreview({ reportPresence }: { reportPresence: (present: boolean) => void }) {
+  const [enabled, setEnabled] = useState(false)
+  useEffect(() => { reportPresence(true) }, [reportPresence])
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 34, padding: '0 8px', borderRadius: 8 }}>
+    <span>启用智能体团队协作</span>
+    <button type="button" role="switch" aria-checked={enabled} aria-label="启用智能体团队协作" onClick={() => setEnabled(value => !value)} style={{ width: 36, height: 22, padding: 2, border: 0, borderRadius: 999, background: enabled ? '#5269dc' : '#dedee3', cursor: 'pointer' }}>
+      <span style={{ display: 'block', width: 18, height: 18, borderRadius: '50%', background: '#fff', transform: enabled ? 'translateX(14px)' : 'none' }} />
+    </button>
+  </div>
+}
+
 function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh')
   const t = (key: LocaleKey): string => (lang === 'zh' ? zh : en)[key]
@@ -116,7 +127,7 @@ function App() {
           <span style={{ flex: 1 }} />
           {/* Mirrors SessionModelControls: one bar, main then subagent, 10px apart. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ModelPicker compact sessionId="preview" access={access} value={main} onChange={save(setMain)} t={t} placement="top" roleLabel={t('chatMainRole')} sourceLabel={t('sessionSource')} scopeHint={t('mainScope')} />
+            <ModelPicker compact sessionId="preview" access={access} value={main} onChange={save(setMain)} t={t} placement="top" roleLabel={t('chatMainRole')} sourceLabel={t('sessionSource')} scopeHint={t('mainScope')} renderOptions={(_busy, _dismiss, _reportFailure, reportPresence) => <NativeOptionsPreview reportPresence={reportPresence} />} />
             <span style={{ display: 'inline-flex', alignItems: 'center' }}>
               <ModelPicker compact sessionId="preview" access={access} value={subagent ?? settingsDefault ?? main} onChange={save(setSubagent)} t={t} placement="top" roleLabel={t('chatSubagentRole')} sourceLabel={t(subagent ? 'sessionSource' : settingsDefault ? 'defaultSource' : 'followingMain')} scopeHint={t('subagentScope')} />
               <span style={{ color: '#38845a', fontSize: 13, lineHeight: '20px', padding: '0 4px' }}>✓</span>
